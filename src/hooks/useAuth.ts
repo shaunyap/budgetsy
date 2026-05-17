@@ -14,7 +14,7 @@ export const useAuth = () => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      const allowedEmail = import.meta.env.VITE_ALLOWED_EMAIL;
+      const allowedEmail = import.meta.env.VITE_ALLOWED_EMAIL || 'shaunyap@gmail.com';
       if (u && allowedEmail && u.email !== allowedEmail) {
         console.warn("Unauthorized email attempted to login:", u.email);
         alert(`Unauthorized email. Please login with ${allowedEmail}`);
