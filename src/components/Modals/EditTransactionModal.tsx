@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { db, APP_ID } from '../../config/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
@@ -8,12 +8,13 @@ import { Envelope, Transaction } from '../../types';
 interface EditTransactionModalProps {
   user: User | null;
   envelopes: Envelope[];
+  transactions: Transaction[];
   transaction: Transaction | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user, envelopes, transaction, isOpen, onClose }) => {
+export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user, envelopes, transactions, transaction, isOpen, onClose }) => {
   const [amount, setAmount] = useState('');
   const [merchant, setMerchant] = useState('');
   const [notes, setNotes] = useState('');
@@ -22,6 +23,78 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
   const [splitType, setSplitType] = useState<'personal' | '50/50' | 'custom'>('personal');
   const [customUserAmount, setCustomUserAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  interface MerchantSuggestion {
+    name: string;
+    categoryId: string;
+    categoryName: string;
+    timestamp: number;
+  }
+
+  const uniqueMerchants = useMemo(() => {
+    const seen = new Set<string>();
+    const list: MerchantSuggestion[] = [];
+
+    for (const t of transactions) {
+      if (!t.merchant || t.merchant.trim() === '' || t.merchant.toLowerCase().trim() === 'misc expense') {
+        continue;
+      }
+      const key = t.merchant.toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push({
+          name: t.merchant.trim(),
+          categoryId: t.categoryId,
+          categoryName: t.categoryName,
+          timestamp: t.timestamp
+        });
+      }
+    }
+    return list;
+  }, [transactions]);
+
+  const filteredSuggestions = useMemo(() => {
+    const query = merchant.toLowerCase().trim();
+    if (!query) {
+      // Show 5 most recent merchants when input is empty
+      return uniqueMerchants.slice(0, 5);
+    }
+    return uniqueMerchants.filter(item =>
+      item.name.toLowerCase().includes(query)
+    ).slice(0, 5);
+  }, [uniqueMerchants, merchant]);
+
+  const selectSuggestion = (suggestion: MerchantSuggestion) => {
+    setMerchant(suggestion.name);
+    // Auto-categorize if the envelope category exists
+    if (envelopes.some(env => env.id === suggestion.categoryId)) {
+      setCategory(suggestion.categoryId);
+    }
+    setShowSuggestions(false);
+    setFocusedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex(prev => (prev + 1) % filteredSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex(prev => (prev - 1 + filteredSuggestions.length) % filteredSuggestions.length);
+    } else if (e.key === 'Enter') {
+      if (focusedIndex >= 0 && focusedIndex < filteredSuggestions.length) {
+        e.preventDefault();
+        selectSuggestion(filteredSuggestions[focusedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
 
   useEffect(() => {
     if (transaction && isOpen) {
@@ -61,9 +134,12 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
       const batch = writeBatch(db);
       const transRef = doc(db, userPath, 'transactions', transaction.id);
 
+      const [year, month, day] = transactionDate.split('-').map(Number);
+      const localTimestamp = new Date(year, month - 1, day).getTime();
+
       // 1. Update Transaction
       batch.update(transRef, {
-        timestamp: new Date(transactionDate).getTime(),
+        timestamp: localTimestamp,
         merchant: merchant || 'Misc Expense',
         notes,
         categoryId: category,
@@ -111,7 +187,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
       <div className="absolute inset-0 bg-stone-100/80 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white border-t sm:border border-stone-200 rounded-t-[20px] sm:rounded-[20px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-black text-stone-900">Edit Expense</h2>
+          <h2 className="text-2xl font-black text-stone-900">Edit Transaction</h2>
           <button onClick={onClose} className="text-stone-500 hover:text-stone-900 transition-colors"><X size={28} /></button>
         </div>
 
@@ -119,19 +195,56 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
           <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-2">Merchant</label>
-              <input
-                autoFocus
-                type="text"
-                className="w-full bg-stone-100 border border-stone-200 rounded-2xl py-4 px-5 text-sm focus:ring-2 focus:ring-blue-700 outline-none text-stone-900 font-medium"
-                value={merchant}
-                onChange={(e) => setMerchant(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  autoFocus
+                  type="text"
+                  className="w-full bg-stone-100 border border-stone-200 rounded-[20px] py-4 px-5 text-sm focus:ring-2 focus:ring-blue-700 outline-none text-stone-900 font-medium"
+                  value={merchant}
+                  onChange={(e) => {
+                    setMerchant(e.target.value);
+                    setShowSuggestions(true);
+                    setFocusedIndex(-1);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => {
+                    // Delay closing to allow click event to register on suggestions
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  required
+                  autoComplete="off"
+                />
+
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <ul className="absolute z-50 w-full mt-2 bg-white border border-stone-200 rounded-[20px] shadow-2xl max-h-52 overflow-y-auto divide-y divide-stone-100 overflow-x-hidden">
+                    {filteredSuggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        onMouseDown={(e) => {
+                          // Prevent input blur before click registers
+                          e.preventDefault();
+                          selectSuggestion(suggestion);
+                        }}
+                        className={`px-5 py-3.5 cursor-pointer text-sm flex justify-between items-center transition-colors ${index === focusedIndex ? 'bg-blue-700/5 text-blue-700 font-bold' : 'text-stone-700 hover:bg-stone-50 hover:text-stone-950'
+                          }`}
+                      >
+                        <span className="font-semibold">{suggestion.name}</span>
+                        <span className="text-[9px] bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-full font-black uppercase text-stone-500 tracking-wider">
+                          {suggestion.categoryName}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-2">Total Amount</label>
+                <label className="block text-[10px] font-black text-stone-500 uppercase tracking-widest mb-2">
+                  Total Amount
+                </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-stone-400">$</span>
                   <input

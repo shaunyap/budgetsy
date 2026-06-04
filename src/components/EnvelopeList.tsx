@@ -38,7 +38,9 @@ export const EnvelopeList: React.FC<EnvelopeListProps> = ({ envelopeStats, dateM
               <div>
                 <h4 className="font-bold text-lg leading-none text-stone-900 group-hover:text-blue-700 transition-colors">{env.name}</h4>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-stone-500 font-mono uppercase tracking-tight">Available: ${env.available.toLocaleString('en-US', {maximumFractionDigits:0})}</span>
+                  <span className="text-[10px] text-stone-500 font-mono uppercase tracking-tight">
+                    Spent: ${Math.round(env.monthSpent).toLocaleString()} of ${env.defaultAlloc.toLocaleString()}
+                  </span>
                   <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${env.isAhead ? 'bg-blue-700/10 text-blue-600' : 'bg-rose-500/10 text-rose-400'}`}>
                     {env.isAhead ? 'Ahead' : 'Behind'} ${Math.round(env.pacingDiff).toLocaleString()}
                     {!env.isAhead && env.daysBehind ? ` (${Math.ceil(env.daysBehind)} Days)` : ''}
@@ -46,8 +48,10 @@ export const EnvelopeList: React.FC<EnvelopeListProps> = ({ envelopeStats, dateM
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs font-black text-stone-600">${env.monthSpent.toLocaleString('en-US', {maximumFractionDigits:0})} <span className="text-[9px] text-stone-400">spent</span></p>
-                <p className="text-[9px] text-stone-400 font-bold uppercase mt-1">of ${env.defaultAlloc.toLocaleString()} cap</p>
+                <p className="text-lg font-black text-stone-900">
+                  {env.available < 0 ? '-' : ''}${Math.abs(env.available).toLocaleString('en-US', {maximumFractionDigits:0})}
+                </p>
+                <p className="text-[9px] text-stone-400 font-bold uppercase mt-0.5 tracking-wider">Available</p>
               </div>
             </div>
 
