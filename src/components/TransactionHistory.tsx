@@ -115,7 +115,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
               </div>
               <div className="text-right flex items-center gap-4">
                 <div>
-                  <p className="font-mono font-black text-sm text-stone-900">-${t.personalImpact.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                  <p className={`font-mono font-black text-sm ${t.personalImpact < 0 ? 'text-emerald-600' : 'text-stone-900'}`}>
+                    {t.personalImpact < 0 ? '+' : '-'}${Math.abs(t.personalImpact).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </p>
                   <p className="text-[9px] text-stone-400 font-bold uppercase mt-1">{t.date}</p>
                   {t.splitType !== 'personal' && (
                     <span className="text-[8px] bg-stone-200 text-stone-600 px-2 py-0.5 rounded-full font-black uppercase mt-1 inline-block">Shared</span>

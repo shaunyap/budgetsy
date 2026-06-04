@@ -113,6 +113,7 @@ const App = () => {
       <AddTransactionModal
         user={user}
         envelopes={envelopes}
+        transactions={transactions}
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
       />
@@ -127,6 +128,7 @@ const App = () => {
       <EditTransactionModal
         user={user}
         envelopes={envelopes}
+        transactions={transactions}
         transaction={editingTransaction}
         isOpen={!!editingTransaction}
         onClose={() => setEditingTransaction(null)}

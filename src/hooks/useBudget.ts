@@ -122,7 +122,7 @@ export const useBudget = (user: User | null) => {
         available,
         isAhead,
         pacingDiff,
-        monthPacePercent: Math.min(100, (monthSpent / (defaultAlloc || 1)) * 100)
+        monthPacePercent: Math.max(0, Math.min(100, (monthSpent / (defaultAlloc || 1)) * 100))
       };
     });
 
