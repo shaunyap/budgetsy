@@ -250,6 +250,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
                   <input
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     className="w-full bg-stone-100 border border-stone-200 rounded-2xl py-4 pl-10 pr-4 text-xl font-mono focus:ring-2 focus:ring-blue-700 outline-none text-stone-900"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
@@ -300,6 +301,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
                 <input
                   type="number"
                   step="0.01"
+                  inputMode="decimal"
                   className="w-full bg-transparent border-none p-0 text-3xl font-mono text-center text-stone-900 focus:ring-0 outline-none"
                   value={customUserAmount}
                   onChange={(e) => setCustomUserAmount(e.target.value)}
