@@ -1,9 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { History, Search, Receipt, Trash2, Edit2, X } from 'lucide-react';
+import { History, Search, Receipt, Edit2, X } from 'lucide-react';
 import { Transaction } from '../types';
-import { db, APP_ID } from '../config/firebase';
-import { doc, writeBatch, increment } from 'firebase/firestore';
-import { auth } from '../config/firebase';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -19,7 +16,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   onEditTransaction
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -29,38 +25,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       return matchesSearch && matchesEnvelope;
     });
   }, [transactions, searchTerm, selectedEnvelopeId]);
-
-  const handleDelete = async (transaction: Transaction) => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    if (!confirm("Are you sure you want to delete this transaction? This will refund the amount to your envelope.")) {
-      return;
-    }
-
-    setIsDeleting(transaction.id);
-    try {
-      const userPath = `artifacts/${APP_ID}/users/${user.uid}`;
-      const batch = writeBatch(db);
-
-      // 1. Delete the transaction
-      const transRef = doc(db, userPath, 'transactions', transaction.id);
-      batch.delete(transRef);
-
-      // 2. Refund the envelope balance
-      const envRef = doc(db, userPath, 'envelopes', transaction.categoryId);
-      batch.update(envRef, {
-        spent: increment(-transaction.personalImpact)
-      });
-
-      await batch.commit();
-    } catch (err) {
-      console.error("Error deleting transaction:", err);
-      alert("Failed to delete transaction.");
-    } finally {
-      setIsDeleting(null);
-    }
-  };
 
   return (
     <section className="space-y-6 pt-4">
@@ -113,7 +77,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                   )}
                 </div>
               </div>
-              <div className="text-right flex items-center gap-4">
+              <div className="text-right flex items-center gap-3">
                 <div>
                   <p className={`font-mono font-black text-sm ${t.personalImpact < 0 ? 'text-emerald-600' : 'text-stone-900'}`}>
                     {t.personalImpact < 0 ? '+' : '-'}${Math.abs(t.personalImpact).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -124,22 +88,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                   )}
                 </div>
                 
-                {/* Actions on Hover */}
-                <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity pl-4 border-l border-stone-200">
+                {/* Always visible Edit Button */}
+                <div className="pl-3 border-l border-stone-200 flex items-center self-stretch">
                   <button 
                     onClick={() => onEditTransaction(t)}
-                    className="p-2 text-blue-700 hover:bg-blue-700/10 rounded-lg transition-colors"
+                    className="p-2 text-stone-400 hover:text-blue-700 hover:bg-blue-50/50 rounded-xl transition-all active:scale-90"
                     title="Edit"
                   >
-                    <Edit2 size={14} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(t)}
-                    disabled={isDeleting === t.id}
-                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 size={14} />
+                    <Edit2 size={16} />
                   </button>
                 </div>
               </div>

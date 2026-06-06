@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Trash2 } from 'lucide-react';
 import { db, APP_ID } from '../../config/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
 import { User } from 'firebase/auth';
@@ -23,6 +23,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
   const [splitType, setSplitType] = useState<'personal' | '50/50' | 'custom'>('personal');
   const [customUserAmount, setCustomUserAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -182,6 +183,39 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
     }
   };
 
+  const handleDeleteTransaction = async () => {
+    if (!user || !transaction) return;
+
+    if (!confirm("Are you sure you want to delete this transaction? This will refund the amount to your envelope.")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const userPath = `artifacts/${APP_ID}/users/${user.uid}`;
+
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Delete transaction
+      const transRef = doc(db, userPath, 'transactions', transaction.id);
+      batch.delete(transRef);
+
+      // 2. Refund the envelope balance
+      const envRef = doc(db, userPath, 'envelopes', transaction.categoryId);
+      batch.update(envRef, {
+        spent: increment(-transaction.personalImpact)
+      });
+
+      await batch.commit();
+      onClose();
+    } catch (err) {
+      console.error("Error deleting transaction:", err);
+      alert("Failed to delete transaction.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-stone-100/80 backdrop-blur-md" onClick={onClose} />
@@ -320,14 +354,25 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full bg-blue-700 text-white font-black py-5 rounded-[20px] hover:bg-blue-600 transition-all shadow-xl shadow-blue-700/20 active:scale-95 text-lg uppercase tracking-widest flex items-center justify-center gap-2"
-          >
-            {isSaving && <Loader2 className="animate-spin" size={20} />}
-            Save Changes
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleDeleteTransaction}
+              disabled={isSaving || isDeleting}
+              className="flex-1 bg-stone-100 hover:bg-rose-50 text-stone-600 hover:text-rose-600 font-bold py-5 rounded-[20px] transition-all border border-stone-200 hover:border-rose-200 active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+            >
+              {isDeleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+              Delete
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving || isDeleting}
+              className="flex-[2] bg-blue-700 text-white font-black py-5 rounded-[20px] hover:bg-blue-600 transition-all shadow-xl shadow-blue-700/20 active:scale-95 text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+            >
+              {isSaving && <Loader2 className="animate-spin" size={16} />}
+              Save Changes
+            </button>
+          </div>
         </form>
       </div>
     </div>
