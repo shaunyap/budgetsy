@@ -65,37 +65,37 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         ) : (
           filteredTransactions.map(t => (
             <div key={t.id} className="py-3 px-5 flex items-center justify-between hover:bg-white/70 transition-colors group relative">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-stone-200 flex items-center justify-center">
-                  <Receipt size={18} className="text-stone-500" />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-stone-200 flex items-center justify-center flex-shrink-0">
+                  <Receipt size={18} className="text-stone-500 flex-shrink-0" />
                 </div>
-                <div>
-                  <p className="font-bold text-sm leading-tight text-stone-900">{t.merchant}</p>
-                  <p className="text-[9px] text-stone-500 uppercase font-black tracking-widest mt-1">{t.categoryName}</p>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm leading-tight text-stone-900 truncate">{t.merchant}</p>
+                  <p className="text-[9px] text-stone-500 uppercase font-black tracking-widest mt-1 truncate">{t.categoryName}</p>
                   {t.notes && (
-                    <p className="text-xs text-stone-600 mt-2 italic font-medium leading-relaxed max-w-[200px]">"{t.notes}"</p>
+                    <p className="text-xs text-stone-600 mt-2 italic font-medium leading-relaxed max-w-[200px] truncate">"{t.notes}"</p>
                   )}
                 </div>
               </div>
-              <div className="text-right flex items-center gap-3">
+              <div className="text-right flex items-center gap-3 flex-shrink-0">
                 <div>
-                  <p className={`font-mono font-black text-sm ${t.personalImpact < 0 ? 'text-emerald-600' : 'text-stone-900'}`}>
+                  <p className={`font-mono font-black text-sm ${t.personalImpact < 0 ? 'text-emerald-600' : 'text-stone-900'} flex-shrink-0`}>
                     {t.personalImpact < 0 ? '+' : '-'}${Math.abs(t.personalImpact).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </p>
-                  <p className="text-[9px] text-stone-400 font-bold uppercase mt-1">{t.date}</p>
+                  <p className="text-[9px] text-stone-400 font-bold uppercase mt-1 flex-shrink-0">{t.date}</p>
                   {t.splitType !== 'personal' && (
-                    <span className="text-[8px] bg-stone-200 text-stone-600 px-2 py-0.5 rounded-full font-black uppercase mt-1 inline-block">Shared</span>
+                    <span className="text-[8px] bg-stone-200 text-stone-600 px-2 py-0.5 rounded-full font-black uppercase mt-1 inline-block flex-shrink-0">Shared</span>
                   )}
                 </div>
                 
                 {/* Always visible Edit Button */}
-                <div className="pl-3 border-l border-stone-200 flex items-center self-stretch">
+                <div className="pl-3 border-l border-stone-200 flex items-center self-stretch flex-shrink-0">
                   <button 
                     onClick={() => onEditTransaction(t)}
-                    className="p-2 text-stone-400 hover:text-blue-700 hover:bg-blue-50/50 rounded-xl transition-all active:scale-90"
+                    className="p-2 text-stone-400 hover:text-blue-700 hover:bg-blue-50/50 rounded-xl transition-all active:scale-90 flex-shrink-0"
                     title="Edit"
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={16} className="flex-shrink-0" />
                   </button>
                 </div>
               </div>

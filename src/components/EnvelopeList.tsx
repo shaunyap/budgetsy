@@ -43,7 +43,7 @@ export const EnvelopeList: React.FC<EnvelopeListProps> = ({ envelopeStats, dateM
                   </span>
                   <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${env.isAhead ? 'bg-blue-700/10 text-blue-600' : 'bg-rose-500/10 text-rose-400'}`}>
                     {env.isAhead ? 'Ahead' : 'Behind'} ${Math.round(env.pacingDiff).toLocaleString()}
-                    {!env.isAhead && env.daysBehind ? ` (${Math.ceil(env.daysBehind)} Days)` : ''}
+                    {!env.isAhead && env.daysBehind ? ` (${Math.ceil(env.daysBehind)} ${Math.ceil(env.daysBehind) === 1 ? 'Day' : 'Days'})` : ''}
                   </div>
                 </div>
               </div>

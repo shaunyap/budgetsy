@@ -359,17 +359,17 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ user
               type="button"
               onClick={handleDeleteTransaction}
               disabled={isSaving || isDeleting}
-              className="flex-1 bg-stone-100 hover:bg-rose-50 text-stone-600 hover:text-rose-600 font-bold py-5 rounded-[20px] transition-all border border-stone-200 hover:border-rose-200 active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+              className="flex-1 bg-stone-100 hover:bg-rose-50 text-stone-600 hover:text-rose-600 font-bold py-5 rounded-[20px] transition-all border border-stone-200 hover:border-rose-200 active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 flex-shrink-0"
             >
-              {isDeleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+              {isDeleting ? <Loader2 className="animate-spin flex-shrink-0" size={16} /> : <Trash2 size={16} className="flex-shrink-0" />}
               Delete
             </button>
             <button
               type="submit"
               disabled={isSaving || isDeleting}
-              className="flex-[2] bg-blue-700 text-white font-black py-5 rounded-[20px] hover:bg-blue-600 transition-all shadow-xl shadow-blue-700/20 active:scale-95 text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+              className="flex-[2] bg-blue-700 text-white font-black py-5 rounded-[20px] hover:bg-blue-600 transition-all shadow-xl shadow-blue-700/20 active:scale-95 text-sm uppercase tracking-widest flex items-center justify-center gap-2 flex-shrink-0"
             >
-              {isSaving && <Loader2 className="animate-spin" size={16} />}
+              {isSaving && <Loader2 className="animate-spin flex-shrink-0" size={16} />}
               Save Changes
             </button>
           </div>
