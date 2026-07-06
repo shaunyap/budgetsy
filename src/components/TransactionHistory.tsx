@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { History, Search, Receipt, Edit2, X } from 'lucide-react';
 import { Transaction } from '../types';
 
@@ -16,6 +16,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   onEditTransaction
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 150;
+
+  // Reset page to 1 when search or category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedEnvelopeId]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -25,6 +32,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       return matchesSearch && matchesEnvelope;
     });
   }, [transactions, searchTerm, selectedEnvelopeId]);
+
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredTransactions, currentPage]);
 
   return (
     <section className="space-y-6 pt-4">
@@ -58,12 +72,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       </div>
 
       <div className="bg-white/50 rounded-[20px] border border-stone-200 divide-y divide-zinc-900/50 overflow-hidden">
-        {filteredTransactions.length === 0 ? (
+        {paginatedTransactions.length === 0 ? (
           <div className="p-12 text-center text-stone-400 text-sm italic font-medium">
             No matching transactions found.
           </div>
         ) : (
-          filteredTransactions.map(t => (
+          paginatedTransactions.map(t => (
             <div key={t.id} className="py-3 px-5 flex items-center justify-between hover:bg-white/70 transition-colors group relative">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-stone-200 flex items-center justify-center flex-shrink-0">
@@ -103,6 +117,30 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           ))
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 px-1">
+          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Page {currentPage} of {totalPages} ({filteredTransactions.length} items)
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-xs font-black uppercase text-stone-600 hover:text-stone-900 hover:border-stone-300 disabled:opacity-50 disabled:pointer-events-none transition-all active:scale-95"
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-xs font-black uppercase text-stone-600 hover:text-stone-900 hover:border-stone-300 disabled:opacity-50 disabled:pointer-events-none transition-all active:scale-95"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
