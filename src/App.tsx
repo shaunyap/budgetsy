@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Loader2, LogIn, Wallet } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { useBudget } from './hooks/useBudget';
@@ -8,8 +8,10 @@ import { EnvelopeList } from './components/EnvelopeList';
 import { TransactionHistory } from './components/TransactionHistory';
 import { AddTransactionModal } from './components/Modals/AddTransactionModal';
 import { EditTransactionModal } from './components/Modals/EditTransactionModal';
-import { ManageEnvelopesModal } from './components/Modals/ManageEnvelopesModal';
+import { TransferModal } from './components/Modals/TransferModal';
 import { FundingModal } from './components/Modals/FundingModal';
+import { db, APP_ID } from './config/firebase';
+import { doc, writeBatch } from 'firebase/firestore';
 
 const App = () => {
   const { user, loading: authLoading, loginWithGoogle, logout } = useAuth();
@@ -21,8 +23,37 @@ const App = () => {
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
+
+  // One-time self-healing migration for existing envelopes
+  useEffect(() => {
+    if (user && envelopes.length > 0) {
+      const userPath = `artifacts/${APP_ID}/users/${user.uid}`;
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      
+      const batch = writeBatch(db);
+      let needsMigration = false;
+      
+      envelopes.forEach(env => {
+        if (!env.lastFunded) {
+          const envRef = doc(db, userPath, 'envelopes', env.id);
+          batch.update(envRef, { lastFunded: currentYearMonth });
+          needsMigration = true;
+        }
+      });
+      
+      if (needsMigration) {
+        console.log("Migrating envelopes to set lastFunded to:", currentYearMonth);
+        batch.commit().then(() => {
+          console.log("Migration successful!");
+        }).catch(err => {
+          console.error("Migration failed:", err);
+        });
+      }
+    }
+  }, [user, envelopes]);
 
   if (authLoading) {
     return (
@@ -76,7 +107,7 @@ const App = () => {
     <div className="min-h-screen bg-stone-100 text-stone-900 font-sans pb-32 selection:bg-blue-700/30 overflow-x-hidden">
       <header className="max-w-2xl mx-auto pt-12 px-6 space-y-6">
         <Header
-          onOpenEdit={() => setIsEditModalOpen(true)}
+          onOpenTransfer={() => setIsTransferModalOpen(true)}
           onOpenFunding={() => setIsFundingModalOpen(true)}
           onLogout={logout}
         />
@@ -118,11 +149,11 @@ const App = () => {
         onClose={() => setIsAddModalOpen(false)}
       />
 
-      <ManageEnvelopesModal
+      <TransferModal
         user={user}
         envelopes={envelopes}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
       />
 
       <EditTransactionModal
