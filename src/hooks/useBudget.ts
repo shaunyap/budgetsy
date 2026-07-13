@@ -37,9 +37,11 @@ export const useBudget = (user: User | null) => {
         if (envList.length === 0 && loading) {
           console.log("No envelopes found. Initializing defaults...");
           const batch = writeBatch(db);
+          const now = new Date();
+          const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
           DEFAULT_ENVELOPES.forEach(env => {
             const docRef = doc(collection(db, userPath, 'envelopes'));
-            batch.set(docRef, env);
+            batch.set(docRef, { ...env, lastFunded: currentYearMonth });
           });
           batch.commit().then(() => {
             console.log("Defaults initialized successfully.");
@@ -88,51 +90,71 @@ export const useBudget = (user: User | null) => {
   }, []);
 
   const totals: Totals = useMemo(() => {
-    const currentMonthTransactions = transactions.filter(t => {
-      const tDate = new Date(t.timestamp);
-      return tDate.getMonth() === dateMetrics.currentMonth && tDate.getFullYear() === dateMetrics.currentYear;
-    });
-
     const envelopeStats = envelopes.map(env => {
-      const personalImpacts = currentMonthTransactions
-        .filter(t => t.categoryId === env.id)
-        .map(t => Number(t.personalImpact) || 0);
+      const allTransactionsForEnv = transactions.filter(t => t.categoryId === env.id);
       
-      const monthSpent = personalImpacts.reduce((sum, val) => sum + val, 0);
+      const monthTransactionsForEnv = allTransactionsForEnv.filter(t => {
+        const tDate = new Date(t.timestamp);
+        return tDate.getMonth() === dateMetrics.currentMonth && tDate.getFullYear() === dateMetrics.currentYear;
+      });
+      
+      const monthSpent = monthTransactionsForEnv.reduce((sum, t) => sum + (Number(t.personalImpact) || 0), 0);
+      const spent = Number(env.spent) || 0;
 
       const allocated = Number(env.allocated) || 0;
-      const spent = Number(env.spent) || 0;
       const defaultAlloc = Number(env.defaultAlloc) || 0;
 
+      const currentYearMonth = `${dateMetrics.currentYear}-${String(dateMetrics.currentMonth + 1).padStart(2, '0')}`;
+      const isFundedThisMonth = env.lastFunded === currentYearMonth;
+
+      const allocatedBeforeCurrentMonth = isFundedThisMonth ? (allocated - defaultAlloc) : allocated;
+      const spentBeforeCurrentMonth = spent - monthSpent;
+      const rolloverFromLastMonth = allocatedBeforeCurrentMonth - spentBeforeCurrentMonth;
+
+      const spentFromThisMonthEnvelope = monthSpent - rolloverFromLastMonth;
       const available = allocated - spent;
+
       const expectedSpendAtThisPoint = defaultAlloc * dateMetrics.monthProgress;
-      const isAhead = monthSpent < expectedSpendAtThisPoint;
-      const pacingDiff = Math.abs(monthSpent - expectedSpendAtThisPoint);
+      const isAhead = spentFromThisMonthEnvelope < expectedSpendAtThisPoint;
+      const pacingDiff = Math.abs(spentFromThisMonthEnvelope - expectedSpendAtThisPoint);
       
       let daysBehind = 0;
-      if (!isAhead && monthSpent > 0 && dateMetrics.currentDay > 0) {
-        const currentPerDayRate = monthSpent / dateMetrics.currentDay;
+      if (!isAhead && spentFromThisMonthEnvelope > 0 && dateMetrics.currentDay > 0) {
+        const currentPerDayRate = spentFromThisMonthEnvelope / dateMetrics.currentDay;
         daysBehind = pacingDiff / currentPerDayRate;
       }
 
+      const monthPacePercent = Math.max(0, Math.min(100, (spentFromThisMonthEnvelope / (defaultAlloc || 1)) * 100));
+
       return {
-        daysBehind,
         ...env,
         monthSpent,
+        spent,
         available,
         isAhead,
         pacingDiff,
-        monthPacePercent: Math.max(0, Math.min(100, (monthSpent / (defaultAlloc || 1)) * 100))
+        monthPacePercent,
+        daysBehind,
+        rolloverFromLastMonth,
+        spentFromThisMonthEnvelope
       };
     });
 
     const totalBudgetRemaining = envelopeStats.reduce((acc, e) => acc + e.available, 0);
-    const totalSpentThisMonth = currentMonthTransactions.reduce((acc, t) => acc + (Number(t.personalImpact) || 0), 0);
+    const totalSpentThisMonth = envelopeStats.reduce((acc, e) => acc + e.monthSpent, 0);
+    const totalThisMonthLeft = envelopeStats.reduce((acc, e) => {
+      const isFunded = e.lastFunded === `${dateMetrics.currentYear}-${String(dateMetrics.currentMonth + 1).padStart(2, '0')}`;
+      const thisMonthBudget = isFunded ? e.defaultAlloc : 0;
+      return acc + (thisMonthBudget - e.monthSpent);
+    }, 0);
+    const totalRollover = envelopeStats.reduce((acc, e) => acc + e.rolloverFromLastMonth, 0);
 
     return {
       remaining: totalBudgetRemaining,
       totalSpentThisMonth,
-      envelopeStats
+      envelopeStats,
+      totalThisMonthLeft,
+      totalRollover
     };
   }, [transactions, envelopes, dateMetrics]);
 

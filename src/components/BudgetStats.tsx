@@ -15,7 +15,12 @@ export const BudgetStats: React.FC<BudgetStatsProps> = ({ totals, dateMetrics })
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-black text-stone-900">{totals.remaining < 0 ? '-' : ''}${Math.abs(totals.remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
         </div>
-        <p className="text-[10px] font-bold text-blue-700/60 mt-2 uppercase tracking-tighter italic">Total Rollover</p>
+        <p className="text-[10px] font-bold text-blue-700/60 mt-2 uppercase tracking-tighter italic">
+          ${totals.totalThisMonthLeft.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} this month
+          {totals.totalRollover !== 0 && (
+            <span> {totals.totalRollover > 0 ? '+' : '-'} ${Math.abs(totals.totalRollover).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} rollover</span>
+          )}
+        </p>
       </div>
 
       <div className="bg-white/70 py-4 px-6 rounded-[20px] border border-stone-200 backdrop-blur-sm relative overflow-hidden group">

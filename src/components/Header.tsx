@@ -1,13 +1,13 @@
 import React from 'react';
-import { Settings2, CircleDollarSign, LogOut } from 'lucide-react';
+import { ArrowLeftRight, CircleDollarSign, LogOut } from 'lucide-react';
 
 interface HeaderProps {
-  onOpenEdit: () => void;
+  onOpenTransfer: () => void;
   onOpenFunding: () => void;
   onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenEdit, onOpenFunding, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenTransfer, onOpenFunding, onLogout }) => {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
       <div>
@@ -21,10 +21,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenEdit, onOpenFunding, onLog
       </div>
       <div className="flex gap-3 w-full lg:w-auto">
         <button 
-          onClick={onOpenEdit}
-          className="w-10 h-10 rounded-2xl bg-white border border-stone-200 flex items-center justify-center text-stone-600 hover:text-stone-900 hover:border-stone-300 transition-all"
+          onClick={onOpenTransfer}
+          className="flex-1 lg:flex-none px-4 h-10 rounded-2xl bg-white border border-stone-200 text-stone-600 flex items-center justify-center gap-2 text-sm font-bold hover:text-stone-900 hover:border-stone-300 transition-all"
+          title="Transfer Money"
         >
-          <Settings2 size={20} />
+          <ArrowLeftRight size={18} />
+          <span>Transfer</span>
         </button>
         <button
           onClick={onOpenFunding}

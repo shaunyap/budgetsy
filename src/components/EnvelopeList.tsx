@@ -39,7 +39,12 @@ export const EnvelopeList: React.FC<EnvelopeListProps> = ({ envelopeStats, dateM
                 <h4 className="font-bold text-lg leading-none text-stone-900 group-hover:text-blue-700 transition-colors">{env.name}</h4>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] text-stone-500 font-mono uppercase tracking-tight">
-                    Spent: ${Math.round(env.monthSpent).toLocaleString()} of ${env.defaultAlloc.toLocaleString()}
+                    Spent: ${Math.max(0, Math.round(env.spentFromThisMonthEnvelope)).toLocaleString()} of ${env.defaultAlloc.toLocaleString()}
+                    {env.rolloverFromLastMonth !== 0 && (
+                      <span className="text-stone-400 ml-1">
+                        ({env.rolloverFromLastMonth > 0 ? '+' : '-'}${Math.abs(Math.round(env.rolloverFromLastMonth))} rollover)
+                      </span>
+                    )}
                   </span>
                   <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${env.isAhead ? 'bg-blue-700/10 text-blue-600' : 'bg-rose-500/10 text-rose-400'}`}>
                     {env.isAhead ? 'Ahead' : 'Behind'} ${Math.round(env.pacingDiff).toLocaleString()}

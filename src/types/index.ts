@@ -5,6 +5,7 @@ export interface Envelope {
   spent: number;
   color: string;
   defaultAlloc: number;
+  lastFunded?: string;
 }
 
 export interface Transaction {
@@ -39,12 +40,16 @@ export interface EnvelopeStat extends Envelope {
   pacingDiff: number;
   monthPacePercent: number;
   daysBehind?: number;
+  rolloverFromLastMonth: number;
+  spentFromThisMonthEnvelope: number;
 }
 
 export interface Totals {
   remaining: number;
   totalSpentThisMonth: number;
   envelopeStats: EnvelopeStat[];
+  totalThisMonthLeft: number;
+  totalRollover: number;
 }
 
 export const DEFAULT_ENVELOPES: Omit<Envelope, 'id'>[] = [
