@@ -149,6 +149,17 @@ export const useBudget = (user: User | null) => {
     }, 0);
     const totalRollover = envelopeStats.reduce((acc, e) => acc + e.rolloverFromLastMonth, 0);
 
+    // Sync envelope balances to localStorage for mission-control integration
+    try {
+      const balances = envelopeStats.reduce((acc, env) => {
+        acc[env.name.toLowerCase().trim()] = env.available;
+        return acc;
+      }, {} as Record<string, number>);
+      localStorage.setItem('budgetsy_remaining_balances', JSON.stringify(balances));
+    } catch (e) {
+      console.error("Failed to sync balances to localStorage", e);
+    }
+
     return {
       remaining: totalBudgetRemaining,
       totalSpentThisMonth,

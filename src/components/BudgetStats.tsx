@@ -18,7 +18,10 @@ export const BudgetStats: React.FC<BudgetStatsProps> = ({ totals, dateMetrics })
         <p className="text-[10px] font-bold text-blue-700/60 mt-2 uppercase tracking-tighter italic">
           ${totals.totalThisMonthLeft.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} this month
           {totals.totalRollover !== 0 && (
-            <span> {totals.totalRollover > 0 ? '+' : '-'} ${Math.abs(totals.totalRollover).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} rollover</span>
+            <>
+              <br />
+              <span>{totals.totalRollover > 0 ? '+' : '-'} ${Math.abs(totals.totalRollover).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} rollover</span>
+            </>
           )}
         </p>
       </div>
